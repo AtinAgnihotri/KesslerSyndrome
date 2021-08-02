@@ -8,7 +8,7 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var starfield: SKEmitterNode!
     var player: SKSpriteNode!
@@ -22,6 +22,9 @@ class GameScene: SKScene {
     
     override func didMove(to view: SKView) {
         setupBackground()
+        addPlayer()
+        addScoreLabel()
+        setupWorldPhysics()
     }
     
     func setupBackground() {
@@ -32,6 +35,28 @@ class GameScene: SKScene {
         starfield.advanceSimulationTime(10)
         starfield.zPosition = -1
         addChild(starfield)
+    }
+    
+    func addPlayer() {
+        player = SKSpriteNode(imageNamed: "player")
+        player.position = CGPoint(x: 100, y: 384)
+        player.physicsBody = SKPhysicsBody(texture: player.texture!, size: player.size)
+        player.physicsBody?.contactTestBitMask = 1
+        addChild(player)
+    }
+    
+    func addScoreLabel() {
+        scoreLabel = SKLabelNode(fontNamed: "Optima-ExtraBlack")
+        scoreLabel.position = CGPoint(x: 16, y: 16)
+        scoreLabel.zPosition = 2
+        scoreLabel.horizontalAlignmentMode = .left
+        addChild(scoreLabel)
+        score = 0
+    }
+    
+    func setupWorldPhysics() {
+        physicsWorld.gravity = .zero
+        physicsWorld.contactDelegate = self
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
