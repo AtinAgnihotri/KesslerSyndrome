@@ -18,15 +18,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var enemies = ["ball", "tv", "hammer"]
     var gameTimer: Timer?
+    
     var isGameOver = false {
         didSet {
             gameOver()
         }
     }
-    
     var score = 0 {
         didSet {
             scoreLabel.text = "Score: \(score)"
+        }
+    }
+    var timerInterval: TimeInterval = 1 {
+        didSet {
+            setupGameTimer()
+        }
+    }
+    var enemiesInTimerCycle = 0 {
+        didSet {
+            if enemiesInTimerCycle >= 20 {
+                if timerInterval > 0.4 {
+                    timerInterval *= 0.85
+                }
+            }
         }
     }
     
@@ -71,7 +85,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func setupGameTimer() {
-        gameTimer = Timer.scheduledTimer(timeInterval: 0.45, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        if let gameTimer = gameTimer {
+            gameTimer.invalidate()
+        }
+        gameTimer = Timer.scheduledTimer(timeInterval: timerInterval, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        print("Timer setup with interval: \(timerInterval)")
     }
     
     // Switch to object pool later on
@@ -90,20 +108,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         enemy.name = enemyType
         
         addChild(enemy)
+        enemiesInTimerCycle += 1
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        setPlayerPositionOnTouch(for: touches)
+    }
+    
+    func setPlayerPositionOnTouch(for touches: Set<UITouch>) {
         guard let touch = touches.first else { return }
         var location = touch.location(in: self)
         
+        // Prevent the teleportation hack
+        let playerLocation = player.position
+        location.x = clampedValue(for: location.x, upperBound: playerLocation.x + 20, lowerBound: playerLocation.x - 20)
+        location.y = clampedValue(for: location.y, upperBound: playerLocation.y + 20, lowerBound: playerLocation.y - 20)
+    
+        
         // Clamp the location to stay within the screen
-        if location.y < 100 {
-            location.y = 100
-        } else if location.y > 668 {
-            location.y = 668
-        }
+        location.y = clampedValue(for: location.y, upperBound: 668, lowerBound: 100)
         
         player.position = location
+    }
+    
+    func clampedValue(for point: CGFloat, upperBound: CGFloat, lowerBound: CGFloat) -> CGFloat {
+        var value = point
+        if value > upperBound {
+            value = upperBound
+        } else if value < lowerBound {
+            value = lowerBound
+        }
+        return value
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
