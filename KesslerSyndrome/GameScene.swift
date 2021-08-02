@@ -37,6 +37,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var enemiesInTimerCycle = 0 {
         didSet {
             if enemiesInTimerCycle >= 20 {
+                enemiesInTimerCycle = 0
                 if timerInterval > 0.4 {
                     timerInterval *= 0.85
                 }
