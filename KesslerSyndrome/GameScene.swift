@@ -10,13 +10,19 @@ import GameplayKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
+    let BASE_FONT = "Optima-ExtraBlack"
+    
     var starfield: SKEmitterNode!
     var player: SKSpriteNode!
     var scoreLabel: SKLabelNode!
     
     var enemies = ["ball", "tv", "hammer"]
     var gameTimer: Timer?
-    var isGameOver = false
+    var isGameOver = false {
+        didSet {
+            gameOver()
+        }
+    }
     
     var score = 0 {
         didSet {
@@ -51,7 +57,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addScoreLabel() {
-        scoreLabel = SKLabelNode(fontNamed: "Optima-ExtraBlack")
+        scoreLabel = SKLabelNode(fontNamed: BASE_FONT)
         scoreLabel.position = CGPoint(x: 16, y: 16)
         scoreLabel.zPosition = 2
         scoreLabel.horizontalAlignmentMode = .left
@@ -86,8 +92,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(enemy)
     }
     
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        var location = touch.location(in: self)
         
+        // Clamp the location to stay within the screen
+        if location.y < 100 {
+            location.y = 100
+        } else if location.y > 668 {
+            location.y = 668
+        }
+        
+        player.position = location
+    }
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        addExplosion(at: player.position)
+        player.removeFromParent()
+        isGameOver = true
+    }
+    
+    func addExplosion(at position: CGPoint) {
+        let explosion = SKEmitterNode(fileNamed: "explosion")!
+        explosion.position = position
+        addChild(explosion)
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -101,5 +129,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if !isGameOver {
             score += 1
         }
+    }
+    
+    func gameOver() {
+        gameTimer?.invalidate()
+        scoreLabel.removeFromParent()
+        addGameOverText()
+        addFinalScoreText()
+    }
+    
+    func addGameOverText() {
+        let gameOver = SKLabelNode(fontNamed: BASE_FONT)
+        gameOver.text = "GAME OVER"
+        gameOver.xScale = 1.5
+        gameOver.yScale = 1.5
+        gameOver.position = CGPoint(x: 512, y: 384)
+        addChild(gameOver)
+    }
+    
+    func addFinalScoreText() {
+        let finalScore = SKLabelNode(fontNamed: BASE_FONT)
+        finalScore.text = "Final Score: \(score)"
+        finalScore.position = CGPoint(x: 512, y: 300)
+        addChild(finalScore)
     }
 }
