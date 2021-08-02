@@ -14,6 +14,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var player: SKSpriteNode!
     var scoreLabel: SKLabelNode!
     
+    var enemies = ["ball", "tv", "hammer"]
+    var gameTimer: Timer?
+    var isGameOver = false
+    
     var score = 0 {
         didSet {
             scoreLabel.text = "Score: \(score)"
@@ -25,6 +29,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addPlayer()
         addScoreLabel()
         setupWorldPhysics()
+        setupGameTimer()
     }
     
     func setupBackground() {
@@ -59,11 +64,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.contactDelegate = self
     }
     
+    func setupGameTimer() {
+        gameTimer = Timer.scheduledTimer(timeInterval: 0.45, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+    }
+    
+    // Switch to object pool later on
+    @objc func createEnemy() {
+        guard let enemyType = enemies.randomElement() else { return }
+        let enemy = SKSpriteNode(imageNamed: enemyType)
+        enemy.position = CGPoint(x: 1200, y: CGFloat.random(in: 50...730))
+        enemy.physicsBody = SKPhysicsBody(texture: enemy.texture!, size: enemy.size)
+        // makes it frictionless
+        enemy.physicsBody?.linearDamping = 0
+        enemy.physicsBody?.angularDamping = 0
+        // makes it spin
+        enemy.physicsBody?.angularVelocity = 5
+        // moves it towards the left edge of screen
+        enemy.physicsBody?.velocity = CGVector(dx: -400, dy: 0)
+        enemy.name = enemyType
+        
+        addChild(enemy)
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
     }
     
     override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+        // Tweak this latter to support object pool
+        for node in children {
+            if node.position.x <= -300 {
+                node.removeFromParent()
+            }
+        }
+        
+        if !isGameOver {
+            score += 1
+        }
     }
 }
